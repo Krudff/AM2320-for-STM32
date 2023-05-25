@@ -1,4 +1,4 @@
 # AM2320 for STM32F411RET6 (Register level I2C)
- same as the previous project, but this time by implementing the I2C on a register level
+AM2320 for STM32F411RET6 using ESP8266 Wifi Module
 
-using AM2320 (T/H sensor), ESP8266 (Wifi Module), and STM32F411RET6
+But this time with the AM2320 I2C communication on a register level
