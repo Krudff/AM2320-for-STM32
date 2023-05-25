@@ -1,0 +1,14 @@
+main.c:68:1:__io_putchar	1
+main.c:79:6:say	1
+main.c:84:14:CRC16	4
+main.c:102:6:sensor_get_data	3
+main.c:125:6:start_sequence	4
+main.c:134:6:AM2320_ReadCommand	4
+main.c:145:6:AM2320_ReadData	6
+main.c:189:5:main	1
+main.c:252:6:SystemClock_Config	3
+main.c:294:13:MX_I2C1_Init	1
+main.c:349:13:MX_USART1_UART_Init	2
+main.c:382:13:MX_USART2_UART_Init	2
+main.c:415:13:MX_GPIO_Init	1
+main.c:436:6:Error_Handler	1

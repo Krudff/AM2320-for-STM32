@@ -1,0 +1,14 @@
+../Core/Src/main.c:68:1:__io_putchar	16	static
+../Core/Src/main.c:79:6:say	16	static
+../Core/Src/main.c:84:14:CRC16	24	static
+../Core/Src/main.c:102:6:sensor_get_data	40	static
+../Core/Src/main.c:125:6:start_sequence	16	static
+../Core/Src/main.c:134:6:AM2320_ReadCommand	4	static
+../Core/Src/main.c:145:6:AM2320_ReadData	40	static
+../Core/Src/main.c:189:5:main	32	static
+../Core/Src/main.c:252:6:SystemClock_Config	88	static
+../Core/Src/main.c:294:13:MX_I2C1_Init	4	static
+../Core/Src/main.c:349:13:MX_USART1_UART_Init	8	static
+../Core/Src/main.c:382:13:MX_USART2_UART_Init	8	static
+../Core/Src/main.c:415:13:MX_GPIO_Init	16	static
+../Core/Src/main.c:436:6:Error_Handler	4	static,ignoring_inline_asm
