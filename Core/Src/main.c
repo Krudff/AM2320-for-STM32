@@ -99,7 +99,7 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 	return crc;
 }
 
-void sensor_get_data(void){//thank you russian dood
+void sensor_get_data(void){//getting data from sensor, but HAL
 	uint8_t data_t[3];
 	uint8_t buf[8];
 
@@ -131,7 +131,7 @@ void start_sequence(uint8_t dir){
 	(void) I2C1->SR1;//flag
 	(void) I2C1->SR2;//flag
 }
-void AM2320_ReadCommand(void){
+void AM2320_ReadCommand(void){//getting data from sensor, but Register level
 	I2C1->DR = 0x03;//function code
 	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit register not empty
 	I2C1->DR = 0x00; //internal register address to read from
