@@ -125,11 +125,11 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 void start_sequence(uint8_t dir){
 	I2C1->CR1 |= (1<<8); //Repeated start bit generation
 	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
-	(void) I2C1->SR1;//flag = I2C1->SR1
-	I2C1->DR = dir ==0? 0xb8 : 0xb9;//address of transmit and receive (tx + 1)
+	(void) I2C1->SR1;//clear ADDR and indicate we're not addressing the slave device
+	I2C1->DR = dir ==0? 0xb8 : 0xb9;//send slave address and indicate whether tx or rx functionality
 	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
-	(void) I2C1->SR1;//flag
-	(void) I2C1->SR2;//flag
+	(void) I2C1->SR1;//read and clear SR1 register (clear ADDR and indicate we're not addressing the slave device)
+	(void) I2C1->SR2;//read and clear the SR2 register (to finish clearing ADDR [address sent bit])
 }
 void AM2320_ReadCommand(void){//getting data from sensor, but Register level
 	I2C1->DR = 0x03;//function code
@@ -149,7 +149,7 @@ void AM2320_ReadData_Register(float *h, float *t){
 	/// Wake sensor ///
 	I2C1->CR1 |= (1<<8); //Repeated Start Generation
 	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
-	(void) I2C1->SR1;//flag = I2C1->SR1
+	(void) I2C1->SR1;//clear ADDR and indicate we're not addressing the slave device
 	I2C1->DR = 0xB8;//send sensor address to SDA (0x5C shifted left by one)
 	HAL_Delay(1);
 	I2C1->CR1 |= (1<<9);// stop bit generation
