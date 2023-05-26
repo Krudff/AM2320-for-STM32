@@ -216,7 +216,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   printf("\n\n\n\n\n\n\n");
   say("ESP is initializing...");
-  //ESP_Init("sss","12345678");
+  ESP_Init("sss","12345678");
   say("ESP is ready!");
   int minutes = 1;//number of minutes between each transmission
   I2C1->CR1 |= (1<<10);// ACK enable
@@ -230,14 +230,14 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  say("Retrieving sensor data...");
-	  //AM2320_ReadData(&h, &t);
-	  sensor_get_data();
+	  AM2320_ReadData(&h, &t);
+	  //sensor_get_data();
 	  say("Sensor data received!");
 	  Value_Buffer[0] = t;
 	  Value_Buffer[1] = h;
 	  say("Preparing to send data...");
 	  HAL_Delay(2000*minutes);
-	  //ESP_Send_Multi("CI4OHK76MHG5N7JL",2,Value_Buffer);
+	  ESP_Send_Multi("CI4OHK76MHG5N7JL",2,Value_Buffer);
 	  printf("Temperature: %f ; Humidity: %f\r\n",Value_Buffer[0],Value_Buffer[1]);
 	  say("Data sent!");
 	  HAL_Delay(2000*minutes);
