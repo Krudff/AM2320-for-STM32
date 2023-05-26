@@ -99,7 +99,7 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 	return crc;
 }
 
-// void sensor_get_data(void){//getting data from sensor, but HAL
+// void AM2320_ReadData_HAL(void){//getting data from sensor, but HAL
 // 	uint8_t data_t[3];
 // 	uint8_t buf[8];
 
@@ -142,7 +142,7 @@ void AM2320_ReadCommand(void){//getting data from sensor, but Register level
 
 }
 
-void AM2320_ReadData(float *h, float *t){
+void AM2320_ReadData_Register(float *h, float *t){
 	uint8_t buf[8];
 	uint8_t i;
 
@@ -230,8 +230,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  say("Retrieving sensor data...");
-	  AM2320_ReadData(&h, &t);
-	  //sensor_get_data();
+	  AM2320_ReadData_Register(&h, &t);
+	  //AM2320_ReadData_HAL();
 	  say("Sensor data received!");
 	  Value_Buffer[0] = t;
 	  Value_Buffer[1] = h;
