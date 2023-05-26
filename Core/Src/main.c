@@ -77,7 +77,7 @@ PUTCHAR_PROTOTYPE
 float Value_Buffer[2];
 
 void say(char arr[]){//for debugging; can remove this useless code
-	printf("Incubator Bot: %s\r\n",arr);
+	printf("Kenneth the Debugger: %s\r\n",arr);
 }
 
 //temp and humid here (from datasheet)
