@@ -129,7 +129,7 @@ void start_sequence(uint8_t dir){
 	I2C1->DR = dir ==0? 0xb8 : 0xb9;//send slave address and indicate whether tx or rx functionality
 	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
 	(void) I2C1->SR1;//read and clear SR1 register (clear ADDR and indicate we're not addressing the slave device)
-	(void) I2C1->SR2;//read and clear the SR2 register (to finish clearing ADDR [address sent bit])
+	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
 }
 void AM2320_ReadCommand(void){//getting data from sensor, but Register level
 	I2C1->DR = 0x03;//function code
