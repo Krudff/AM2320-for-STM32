@@ -99,28 +99,28 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 	return crc;
 }
 
-void sensor_get_data(void){//getting data from sensor, but HAL
-	uint8_t data_t[3];
-	uint8_t buf[8];
+// void sensor_get_data(void){//getting data from sensor, but HAL
+// 	uint8_t data_t[3];
+// 	uint8_t buf[8];
 
-	data_t[0]=0x03;
-	data_t[1]=0x00;
-	data_t[2]=0x04;
+// 	data_t[0]=0x03;
+// 	data_t[1]=0x00;
+// 	data_t[2]=0x04;
 
-	HAL_I2C_IsDeviceReady(&hi2c1,0xb8,2,1);
-	HAL_I2C_Master_Transmit(&hi2c1,0xb8,data_t,3,1);
-	HAL_I2C_Master_Receive(&hi2c1,0xb9,buf,8,2);
+// 	HAL_I2C_IsDeviceReady(&hi2c1,0xb8,2,1);
+// 	HAL_I2C_Master_Transmit(&hi2c1,0xb8,data_t,3,1);
+// 	HAL_I2C_Master_Receive(&hi2c1,0xb9,buf,8,2);
 
-	unsigned int Rcrc = buf[7] << 8;
-	Rcrc += buf[6];
-	if(Rcrc == CRC16(buf,6)){
-		unsigned int temperature = ((buf[4] & 0x7F) << 8) + buf[5];
-		t = temperature / 10.0;
-		t = (((buf[4] & 0x80) >> 7) == 1) ? ((t) * (-1)) : t;
-		unsigned int humidity = (buf[2] << 8) + buf[3];
-		h = humidity / 10.0;
-	}
-}
+// 	unsigned int Rcrc = buf[7] << 8;
+// 	Rcrc += buf[6];
+// 	if(Rcrc == CRC16(buf,6)){
+// 		unsigned int temperature = ((buf[4] & 0x7F) << 8) + buf[5];
+// 		t = temperature / 10.0;
+// 		t = (((buf[4] & 0x80) >> 7) == 1) ? ((t) * (-1)) : t;
+// 		unsigned int humidity = (buf[2] << 8) + buf[3];
+// 		h = humidity / 10.0;
+// 	}
+// }
 
 void start_sequence(uint8_t dir){
 	I2C1->CR1 |= (1<<8); //Repeated start bit generation
