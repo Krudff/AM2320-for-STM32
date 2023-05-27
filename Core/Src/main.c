@@ -133,7 +133,7 @@ void start_sequence(uint8_t dir){
 }
 void AM2320_ReadCommand(void){//getting data from sensor, but Register level
 	I2C1->DR = 0x03;//function code
-	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit register not empty
+	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit mode DR not empty
 	I2C1->DR = 0x00; //internal register address to read from
 	while(!(I2C1->SR1 & (1<<7))){};//wait
 	I2C1->DR = 0x04;
@@ -163,7 +163,7 @@ void AM2320_ReadData_Register(float *h, float *t){
 	start_sequence(1);//when receiving, read/write bit is 1
 
 	for(i=0; i<8; i++){
-		while(!(I2C1->SR1 & (1<<6))){}//wait till receiver contains something
+		while(!(I2C1->SR1 & (1<<6))){}//wait till receiver mode DR is empty
 		buf[i]=I2C1->DR;//store data from sensor to buf array
 	}
 	I2C1->CR1 |= (1<<9);//stop bit generation
