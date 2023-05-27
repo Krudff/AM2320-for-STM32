@@ -163,7 +163,7 @@ void AM2320_ReadData_Register(float *h, float *t){
 	start_sequence(1);//when receiving, read/write bit is 1
 
 	for(i=0; i<8; i++){
-		while(!(I2C1->SR1 & (1<<6))){}//wait till receiver is empty
+		while(!(I2C1->SR1 & (1<<6))){}//wait till receiver is non empty
 		buf[i]=I2C1->DR;//store data from sensor to buf array
 	}
 	I2C1->CR1 |= (1<<9);//stop bit generation
