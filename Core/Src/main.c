@@ -136,7 +136,7 @@ void AM2320_ReadCommand(void){//getting data from sensor, but Register level
 	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit mode DR empty
 	I2C1->DR = 0x00; //internal register address to read from
 	while(!(I2C1->SR1 & (1<<7))){};//wait
-	I2C1->DR = 0x04;
+	I2C1->DR = 0x04; //register length
 	while(!(I2C1->SR1 & (1<<7))){};//wait
 	I2C1->CR1 |= (1<<9); //stop bit generation
 
