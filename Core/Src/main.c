@@ -125,7 +125,7 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 void start_sequence(uint8_t dir){
 	I2C1->CR1 |= (1<<8); //Repeated start bit generation
 	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
-	(void) I2C1->SR1;//read Status Register 1 to reset it (address sent)
+	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
 	I2C1->DR = dir ==0? 0xb8 : 0xb9;//send slave address and indicate whether tx or rx functionality
 	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
 	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
