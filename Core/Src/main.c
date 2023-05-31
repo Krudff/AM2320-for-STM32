@@ -99,48 +99,48 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 	return crc;
 }
 
-// void AM2320_ReadData_HAL(void){//getting data from sensor, but HAL
-// 	uint8_t data_t[3];
-// 	uint8_t buf[8];
+ void AM2320_ReadData_HAL(void){//getting data from sensor, but HAL
+ 	uint8_t data_t[3];
+ 	uint8_t buf[8];
 
-// 	data_t[0]=0x03;
-// 	data_t[1]=0x00;
-// 	data_t[2]=0x04;
+ 	data_t[0]=0x03;
+ 	data_t[1]=0x00;
+ 	data_t[2]=0x04;
 
-// 	HAL_I2C_IsDeviceReady(&hi2c1,0xb8,2,1);
-// 	HAL_I2C_Master_Transmit(&hi2c1,0xb8,data_t,3,1);
-// 	HAL_I2C_Master_Receive(&hi2c1,0xb9,buf,8,2);
+ 	HAL_I2C_IsDeviceReady(&hi2c1,0xb8,2,1);
+ 	HAL_I2C_Master_Transmit(&hi2c1,0xb8,data_t,3,1);
+ 	HAL_I2C_Master_Receive(&hi2c1,0xb9,buf,8,2);
 
-// 	unsigned int Rcrc = buf[7] << 8;
-// 	Rcrc += buf[6];
-// 	if(Rcrc == CRC16(buf,6)){
-// 		unsigned int temperature = ((buf[4] & 0x7F) << 8) + buf[5];
-// 		t = temperature / 10.0;
-// 		t = (((buf[4] & 0x80) >> 7) == 1) ? ((t) * (-1)) : t;
-// 		unsigned int humidity = (buf[2] << 8) + buf[3];
-// 		h = humidity / 10.0;
-// 	}
-// }
+ 	unsigned int Rcrc = buf[7] << 8;
+ 	Rcrc += buf[6];
+ 	if(Rcrc == CRC16(buf,6)){
+ 		unsigned int temperature = ((buf[4] & 0x7F) << 8) + buf[5];
+ 		t = temperature / 10.0;
+ 		t = (((buf[4] & 0x80) >> 7) == 1) ? ((t) * (-1)) : t;
+ 		unsigned int humidity = (buf[2] << 8) + buf[3];
+ 		h = humidity / 10.0;
+ 	}
+ }
 
-void start_sequence(uint8_t dir){
-	I2C1->CR1 |= (1<<8); //Repeated start bit generation
-	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
-	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
-	I2C1->DR = dir ==0? 0xb8 : 0xb9;//send slave address and indicate whether tx or rx functionality
-	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
-	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
-	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
-}
-void AM2320_ReadCommand(void){//getting data from sensor, but Register level
-	I2C1->DR = 0x03;//function code
-	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit mode DR empty
-	I2C1->DR = 0x00; //internal register address to read from
-	while(!(I2C1->SR1 & (1<<7))){};//wait
-	I2C1->DR = 0x04; //register length
-	while(!(I2C1->SR1 & (1<<7))){};//wait
-	I2C1->CR1 |= (1<<9); //stop bit generation
-
-}
+//void start_sequence(uint8_t dir){
+//	I2C1->CR1 |= (1<<8); //Repeated start bit generation
+//	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
+//	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
+//	I2C1->DR = dir ==0? 0xb8 : 0xb9;//send slave address and indicate whether tx or rx functionality
+//	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
+//	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
+//	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
+//}
+//void AM2320_ReadCommand(void){//getting data from sensor, but Register level
+//	I2C1->DR = 0x03;//function code
+//	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit mode DR empty
+//	I2C1->DR = 0x00; //internal register address to read from
+//	while(!(I2C1->SR1 & (1<<7))){};//wait
+//	I2C1->DR = 0x04; //register length
+//	while(!(I2C1->SR1 & (1<<7))){};//wait
+//	I2C1->CR1 |= (1<<9); //stop bit generation
+//
+//}
 
 void AM2320_ReadData_Register(float *h, float *t){
 	uint8_t buf[8];
@@ -153,21 +153,37 @@ void AM2320_ReadData_Register(float *h, float *t){
 	I2C1->DR = 0xB8;//send sensor address to SDA (0x5C shifted left by one)
 	HAL_Delay(1);
 	I2C1->CR1 |= (1<<9);// stop bit generation
-
 	// send read command //
-	start_sequence(0);//when transmitting, read/write bit is 0
-	AM2320_ReadCommand();//command sensor to read data from it
-	HAL_Delay(1);
+	I2C1->CR1 |= (1<<8); //Repeated start bit generation
+	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
+	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
+	I2C1->DR = 0xb8;//send slave address and indicate whether tx or rx functionality
+	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
+	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
+	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
 
+	I2C1->DR = 0x03;//function code
+	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit mode DR empty
+	I2C1->DR = 0x00; //internal register address to read from
+	while(!(I2C1->SR1 & (1<<7))){};//wait
+	I2C1->DR = 0x04; //register length
+	while(!(I2C1->SR1 & (1<<7))){};//wait
+	I2C1->CR1 |= (1<<9); //stop bit generation
+	HAL_Delay(1);
 	// read data from sensor //
-	start_sequence(1);//when receiving, read/write bit is 1
+	I2C1->CR1 |= (1<<8); //Repeated start bit generation
+	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
+	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
+	I2C1->DR = 0xb9;//send slave address and indicate whether tx or rx functionality
+	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
+	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
+	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
 
 	for(i=0; i<8; i++){
 		while(!(I2C1->SR1 & (1<<6))){}//wait till receiver mode DR contains something
 		buf[i]=I2C1->DR;//store data from sensor to buf array
 	}
 	I2C1->CR1 |= (1<<9);//stop bit generation
-
 	// crc check //
 	unsigned int Rcrc = buf[7] << 8;
 	Rcrc += buf[6];
@@ -236,11 +252,11 @@ int main(void)
 	  Value_Buffer[0] = t;
 	  Value_Buffer[1] = h;
 	  say("Preparing to send data...");
-	  HAL_Delay(2000*minutes);
+	  HAL_Delay(3000*minutes);
 	  ESP_Send_Multi("CI4OHK76MHG5N7JL",2,Value_Buffer);
 	  printf("Temperature: %f ; Humidity: %f\r\n",Value_Buffer[0],Value_Buffer[1]);
 	  say("Data sent!");
-	  HAL_Delay(2000*minutes);
+	  HAL_Delay(57000*minutes);
   }
   /* USER CODE END 3 */
 }
