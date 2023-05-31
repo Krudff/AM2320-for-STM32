@@ -122,25 +122,7 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
  	}
  }
 
-//void start_sequence(uint8_t dir){
-//	I2C1->CR1 |= (1<<8); //Repeated start bit generation
-//	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
-//	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
-//	I2C1->DR = dir ==0? 0xb8 : 0xb9;//send slave address and indicate whether tx or rx functionality
-//	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
-//	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
-//	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
-//}
-//void AM2320_ReadCommand(void){//getting data from sensor, but Register level
-//	I2C1->DR = 0x03;//function code
-//	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit mode DR empty
-//	I2C1->DR = 0x00; //internal register address to read from
-//	while(!(I2C1->SR1 & (1<<7))){};//wait
-//	I2C1->DR = 0x04; //register length
-//	while(!(I2C1->SR1 & (1<<7))){};//wait
-//	I2C1->CR1 |= (1<<9); //stop bit generation
-//
-//}
+
 
 void AM2320_ReadData_Register(float *h, float *t){
 	uint8_t buf[8];
