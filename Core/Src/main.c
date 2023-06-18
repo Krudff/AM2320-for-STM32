@@ -124,7 +124,7 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 
 
 
-void AM2320_ReadData_Register(float *h, float *t){
+void AM2320_ReadData_Register(void){
 	uint8_t buf[8];
 	uint8_t i;
 
@@ -171,10 +171,10 @@ void AM2320_ReadData_Register(float *h, float *t){
 	Rcrc += buf[6];
 	if(Rcrc == CRC16(buf, 6)){
 		unsigned int temperature = ((buf[4] & 0x7F) << 8) + buf[5];
-		*t = temperature /10.0;
-		*t = (((buf[4] & 0x80) >> 7)== 1) ? ((*t) * (-1)) : *t;
+		t = temperature /10.0;
+		t = (((buf[4] & 0x80) >> 7)== 1) ? ((t) * (-1)) : t;
 	unsigned int humidity = (buf[2] << 8) + buf[3];
-	*h = humidity / 10.0;
+	h = humidity / 10.0;
 	}
 }
 
@@ -228,7 +228,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  say("Retrieving sensor data...");
-	  AM2320_ReadData_Register(&h, &t);
+	  AM2320_ReadData_Register();
 	  //AM2320_ReadData_HAL();
 	  say("Sensor data received!");
 	  Value_Buffer[0] = t;
