@@ -49,6 +49,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 float t,h;
+uint8_t restart_stm;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -122,9 +123,27 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
  	}
  }
 
+//void start_sequence(uint8_t dir){
+//	I2C1->CR1 |= (1<<8); //Repeated start bit generation
+//	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
+//	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
+//	I2C1->DR = dir ==0? 0xb8 : 0xb9;//send slave address and indicate whether tx or rx functionality
+//	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
+//	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
+//	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
+//}
+//void AM2320_ReadCommand(void){//getting data from sensor, but Register level
+//	I2C1->DR = 0x03;//function code
+//	while(!(I2C1->SR1 & (1<<7))){};//wait till transmit mode DR empty
+//	I2C1->DR = 0x00; //internal register address to read from
+//	while(!(I2C1->SR1 & (1<<7))){};//wait
+//	I2C1->DR = 0x04; //register length
+//	while(!(I2C1->SR1 & (1<<7))){};//wait
+//	I2C1->CR1 |= (1<<9); //stop bit generation
+//
+//}
 
-
-void AM2320_ReadData_Register(void){
+void AM2320_ReadData_Register(){
 	uint8_t buf[8];
 	uint8_t i;
 
@@ -177,7 +196,30 @@ void AM2320_ReadData_Register(void){
 	h = humidity / 10.0;
 	}
 }
+void TIM2_Init(void){
+	say("Timer initialized");
+	RCC->APB1ENR |= (1<<0); // Enable clock for TIM2
+	TIM2->PSC = 42000-1;    // Set PSC+1 = 16000 such that Feff = 1/0.001 Hz
 
+	TIM2->ARR = 10000;        // Set timer to reset after CNT = 166, essentially after 166ms which is half the period.
+
+	TIM2->DIER |= (1<<0);   // Enable timer interrupt generation
+
+	NVIC->IP[TIM2_IRQn] =  (2 << 4); // Set priority to 2
+	NVIC->ISER[TIM2_IRQn >> 5] |= (1 << (TIM2_IRQn % 32)); // Enable interrupt
+	TIM2->SR &= ~(1<<0);
+
+	TIM2->EGR |= (1<<0);
+	TIM2->CR1 &= ~(1<<0);    // Disable timer, for now
+}
+
+void TIM2_IRQHandler(void){
+	say("Interrupt handler activated");
+	if(restart_stm){
+		NVIC_SystemReset();
+	}
+	TIM2->SR &= ~(1<<0); // Clear UIF update interrupt flag
+}
 /* USER CODE END 0 */
 
 /**
@@ -212,12 +254,19 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  restart_stm = 0;
+
   printf("\n\n\n\n\n\n\n");
+  TIM2_Init();
   say("ESP is initializing...");
+  restart_stm = 1;
+  TIM2->CR1 |= (1<<0);
   ESP_Init("sss","12345678");
+  restart_stm = 0;
+  TIM2->CR1 &= ~(1<<0);    // Disable timer, for now
   say("ESP is ready!");
   int minutes = 1;//number of minutes between each transmission
-  I2C1->CR1 |= (1<<10);// ACK enable
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -227,17 +276,22 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  restart_stm = 1;
+	  TIM2->CR1 |= (1<<0);
 	  say("Retrieving sensor data...");
-	  AM2320_ReadData_Register();
-	  //AM2320_ReadData_HAL();
+//	  AM2320_ReadData_Register();
+	  AM2320_ReadData_HAL();
 	  say("Sensor data received!");
 	  Value_Buffer[0] = t;
 	  Value_Buffer[1] = h;
 	  say("Preparing to send data...");
 	  HAL_Delay(3000*minutes);
 	  ESP_Send_Multi("CI4OHK76MHG5N7JL",2,Value_Buffer);
+	  restart_stm = 0;
+	  TIM2->CR1 &= ~(1<<0);    // Disable timer, for now
 	  printf("Temperature: %f ; Humidity: %f\r\n",Value_Buffer[0],Value_Buffer[1]);
 	  say("Data sent!");
+	  //ESP_Init("sss","12345678");
 	  HAL_Delay(57000*minutes);
   }
   /* USER CODE END 3 */
@@ -297,42 +351,42 @@ static void MX_I2C1_Init(void)
   /* USER CODE END I2C1_Init 0 */
 
   /* USER CODE BEGIN I2C1_Init 1 */
-	RCC->AHB1ENR |= (1<<1);//GPIOB clock enable
-
-	GPIOB->MODER |= (2<<16) | (2<<18);// PB8 and PB9 as alternate funct
-	GPIOB->OTYPER |= (1<<8) | (1<<9); // PB8 PB9 as output open drain
-
-	GPIOB->OSPEEDR |= (3<<16) | (3<<18);// PB8 PB9 as high speed
-
-	GPIOB->AFR[1] |= (4<<0) | (4<<4); // PB8 PB9 as alt func 4 (I2C1)
-
-	RCC->APB1ENR |= (1<<21); // i2c clock enable
-
-	I2C1->CR1 |= (1<<15);//reset the I2C
-	I2C1->CR1 &= ~(1<<15);
-
-	I2C1->CR2 |= (16<0); // input peripheral freq in MHz (16 MHz)
-
-	I2C1->CCR |= (80<<0);// (1000ns + 4000ns)/(1/16MHz)
-
-	I2C1->TRISE |= (17<<0); // configure rise time register
-
-	I2C1->CR1 |= (1<<0);// enable I2C
+//	RCC->AHB1ENR |= (1<<1);//GPIOB clock enable
+//
+//	GPIOB->MODER |= (2<<16) | (2<<18);// PB8 and PB9 as alternate funct
+//	GPIOB->OTYPER |= (1<<8) | (1<<9); // PB8 PB9 as output open drain
+//
+//	GPIOB->OSPEEDR |= (3<<16) | (3<<18);// PB8 PB9 as high speed
+//
+//	GPIOB->AFR[1] |= (4<<0) | (4<<4); // PB8 PB9 as alt func 4 (I2C1)
+//
+//	RCC->APB1ENR |= (1<<21); // i2c clock enable
+//
+//	I2C1->CR1 |= (1<<15);//reset the I2C
+//	I2C1->CR1 &= ~(1<<15);
+//
+//	I2C1->CR2 |= (16<0); // input peripheral freq in MHz (16 MHz)
+//
+//	I2C1->CCR |= (80<<0);// (1000ns + 4000ns)/(1/16MHz)
+//
+//	I2C1->TRISE |= (17<<0); // configure rise time register
+//
+//	I2C1->CR1 |= (1<<0);// enable I2C
 
   /* USER CODE END I2C1_Init 1 */
-//  hi2c1.Instance = I2C1;
-//  hi2c1.Init.ClockSpeed = 100000;
-//  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-//  hi2c1.Init.OwnAddress1 = 0;
-//  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-//  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-//  hi2c1.Init.OwnAddress2 = 0;
-//  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-//  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-//  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
