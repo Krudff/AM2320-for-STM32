@@ -199,9 +199,9 @@ void AM2320_ReadData_Register(){
 void TIM2_Init(void){
 	say("Timer initialized");
 	RCC->APB1ENR |= (1<<0); // Enable clock for TIM2
-	TIM2->PSC = 42000-1;    // Set PSC+1
+	TIM2->PSC = 42000-1;    // Set PSC+1 = 16000 such that Feff = 1/0.001 Hz
 
-	TIM2->ARR = 10000; //auto reload
+	TIM2->ARR = 10000;        // Set timer to reset after CNT = 166, essentially after 166ms which is half the period.
 
 	TIM2->DIER |= (1<<0);   // Enable timer interrupt generation
 
@@ -261,7 +261,7 @@ int main(void)
   say("ESP is initializing...");
   restart_stm = 1;
   TIM2->CR1 |= (1<<0);
-  ESP_Init("sss","12345678");
+  ESP_Init("EEE192-308","EEE192_Room308");
   restart_stm = 0;
   TIM2->CR1 &= ~(1<<0);    // Disable timer, for now
   say("ESP is ready!");
