@@ -144,22 +144,23 @@ unsigned int CRC16(uint8_t *ptr, uint8_t length){
 //}
 
 void AM2320_ReadData_Register(){
-	uint8_t buf[8];
 	uint8_t i;
+	uint8_t buf[8];
 
 	/// Wake sensor ///
 	I2C1->CR1 |= (1<<8); //Repeated Start Generation
 	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
 	(void) I2C1->SR1;//read Status Register 1 to reset SB (actually it resets whole SR1 but ehhh)
 	I2C1->DR = 0xB8;//send sensor address to SDA (0x5C shifted left by one)
-	HAL_Delay(1);
+	delay_ms(1);
 	I2C1->CR1 |= (1<<9);// stop bit generation
+	say("sensor awake");
 	// send read command //
 	I2C1->CR1 |= (1<<8); //Repeated start bit generation
 	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
 	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
 	I2C1->DR = 0xb8;//send slave address and indicate whether tx or rx functionality
-	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
+	while(!(I2C1->SR1 & (1<<1))){};//wait till address sent
 	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
 	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
 
@@ -170,13 +171,14 @@ void AM2320_ReadData_Register(){
 	I2C1->DR = 0x04; //register length
 	while(!(I2C1->SR1 & (1<<7))){};//wait
 	I2C1->CR1 |= (1<<9); //stop bit generation
-	HAL_Delay(1);
+	delay_ms(1);
+	say("sensor ready to send");
 	// read data from sensor //
 	I2C1->CR1 |= (1<<8); //Repeated start bit generation
 	while (!(I2C1->SR1 & (1<<0))){}//wait for start bit generation
 	(void) I2C1->SR1;//read Status Register 1 to reset SB (start bit)
 	I2C1->DR = 0xb9;//send slave address and indicate whether tx or rx functionality
-	while(!(I2C1->SR1 & (1<<1)));//wait till address sent
+	while(!(I2C1->SR1 & (1<<1))){};//wait till address sent
 	(void) I2C1->SR1;//read Status Register 1 to reset ADDR (address sent)
 	(void) I2C1->SR2;//read and clear the SR2 register (to go back to initial/fresh state for the next transmission)
 
@@ -185,6 +187,7 @@ void AM2320_ReadData_Register(){
 		buf[i]=I2C1->DR;//store data from sensor to buf array
 	}
 	I2C1->CR1 |= (1<<9);//stop bit generation
+	say("sensor data read");
 	// crc check //
 	unsigned int Rcrc = buf[7] << 8;
 	Rcrc += buf[6];
@@ -201,7 +204,7 @@ void TIM2_Init(void){
 	RCC->APB1ENR |= (1<<0); // Enable clock for TIM2
 	TIM2->PSC = 42000-1;    // Set PSC+1 = 16000 such that Feff = 1/0.001 Hz
 
-	TIM2->ARR = 10000;        // Set timer to reset after CNT = 166, essentially after 166ms which is half the period.
+	TIM2->ARR = 30000;        // Set timer to reset
 
 	TIM2->DIER |= (1<<0);   // Enable timer interrupt generation
 
@@ -219,6 +222,13 @@ void TIM2_IRQHandler(void){
 		NVIC_SystemReset();
 	}
 	TIM2->SR &= ~(1<<0); // Clear UIF update interrupt flag
+}
+
+void delay_ms(int d){
+	int i;
+	for(; d>0 ;d--){
+		for(i =0; i<2657;i++);
+	}
 }
 /* USER CODE END 0 */
 
@@ -261,12 +271,14 @@ int main(void)
   say("ESP is initializing...");
   restart_stm = 1;
   TIM2->CR1 |= (1<<0);
-  ESP_Init("EEE192-308","EEE192_Room308");
+//  ESP_Init("EEE192-308","EEE192_Room308");
+  ESP_Init("sss","12345678");
   restart_stm = 0;
+  TIM2->CNT = 0;
   TIM2->CR1 &= ~(1<<0);    // Disable timer, for now
   say("ESP is ready!");
   int minutes = 1;//number of minutes between each transmission
-
+  I2C1->CR1 |= (1<<10);//enable ack
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -279,20 +291,27 @@ int main(void)
 	  restart_stm = 1;
 	  TIM2->CR1 |= (1<<0);
 	  say("Retrieving sensor data...");
-//	  AM2320_ReadData_Register();
-	  AM2320_ReadData_HAL();
+	  AM2320_ReadData_Register();
+//	  AM2320_ReadData_HAL();
 	  say("Sensor data received!");
+//	  if(t<1){
+//	  		  t=25.0;
+//	  }
+//	  if(h<1){
+//		  h=60.0;
+//	  }
 	  Value_Buffer[0] = t;
 	  Value_Buffer[1] = h;
 	  say("Preparing to send data...");
-	  HAL_Delay(3000*minutes);
+	  delay_ms(2000*minutes);
 	  ESP_Send_Multi("CI4OHK76MHG5N7JL",2,Value_Buffer);
 	  restart_stm = 0;
+	  TIM2->CNT = 0;
 	  TIM2->CR1 &= ~(1<<0);    // Disable timer, for now
 	  printf("Temperature: %f ; Humidity: %f\r\n",Value_Buffer[0],Value_Buffer[1]);
 	  say("Data sent!");
-	  //ESP_Init("sss","12345678");
-	  HAL_Delay(57000*minutes);
+
+	  delay_ms(57000*minutes);
   }
   /* USER CODE END 3 */
 }
@@ -351,42 +370,42 @@ static void MX_I2C1_Init(void)
   /* USER CODE END I2C1_Init 0 */
 
   /* USER CODE BEGIN I2C1_Init 1 */
-//	RCC->AHB1ENR |= (1<<1);//GPIOB clock enable
-//
-//	GPIOB->MODER |= (2<<16) | (2<<18);// PB8 and PB9 as alternate funct
-//	GPIOB->OTYPER |= (1<<8) | (1<<9); // PB8 PB9 as output open drain
-//
-//	GPIOB->OSPEEDR |= (3<<16) | (3<<18);// PB8 PB9 as high speed
-//
-//	GPIOB->AFR[1] |= (4<<0) | (4<<4); // PB8 PB9 as alt func 4 (I2C1)
-//
-//	RCC->APB1ENR |= (1<<21); // i2c clock enable
-//
-//	I2C1->CR1 |= (1<<15);//reset the I2C
-//	I2C1->CR1 &= ~(1<<15);
-//
-//	I2C1->CR2 |= (16<<0); // input peripheral freq in MHz (16 MHz)
-//
-//	I2C1->CCR |= (80<<0);// (1000ns + 4000ns)/(1/16MHz)
-//
-//	I2C1->TRISE |= (17<<0); // configure rise time register
-//
-//	I2C1->CR1 |= (1<<0);// enable I2C
+	RCC->AHB1ENR |= (1<<1);//GPIOB clock enable
+
+	GPIOB->MODER |= (2<<16) | (2<<18);// PB8 and PB9 as alternate funct
+	GPIOB->OTYPER |= (1<<8) | (1<<9); // PB8 PB9 as output open drain
+
+	GPIOB->OSPEEDR |= (3<<16) | (3<<18);// PB8 PB9 as high speed
+
+	GPIOB->AFR[1] |= (4<<0) | (4<<4); // PB8 PB9 as alt func 4 (I2C1)
+
+	RCC->APB1ENR |= (1<<21); // i2c clock enable
+
+	I2C1->CR1 |= (1<<15);//reset the I2C
+	I2C1->CR1 &= ~(1<<15);
+
+	I2C1->CR2 |= (16<<0); // input peripheral freq in MHz (16 MHz)
+
+	I2C1->CCR |= (80<<0);// (1000ns + 4000ns)/(1/16MHz)
+
+	I2C1->TRISE |= (17<<0); // configure rise time register
+
+	I2C1->CR1 |= (1<<0);// enable I2C
 
   /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
+//  hi2c1.Instance = I2C1;
+//  hi2c1.Init.ClockSpeed = 100000;
+//  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+//  hi2c1.Init.OwnAddress1 = 0;
+//  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+//  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+//  hi2c1.Init.OwnAddress2 = 0;
+//  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+//  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+//  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
