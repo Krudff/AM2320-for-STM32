@@ -365,7 +365,7 @@ static void MX_I2C1_Init(void)
 //	I2C1->CR1 |= (1<<15);//reset the I2C
 //	I2C1->CR1 &= ~(1<<15);
 //
-//	I2C1->CR2 |= (16<0); // input peripheral freq in MHz (16 MHz)
+//	I2C1->CR2 |= (16<<0); // input peripheral freq in MHz (16 MHz)
 //
 //	I2C1->CCR |= (80<<0);// (1000ns + 4000ns)/(1/16MHz)
 //
